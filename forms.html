@@ -24,22 +24,23 @@
 
   <button onclick="incluirCliente()">Incluir Cliente</button>
   <button onclick="alterarCliente()">Alterar Cliente</button>
+  <div id="botaoDinamico"></div>
 
   <script>
-    // Inicializa com lista original se ainda não estiver no localStorage
+    // Inicialização
     if (!localStorage.getItem("clientes")) {
-      const clientesOriginais = [
+      const clientesIniciais = [
         { id: 1, nome: "João Silva", endereco: "Rua A", telefone: "123456", email: "joao@gmail.com" },
         { id: 2, nome: "Maria Oliveira", endereco: "Rua B", telefone: "654321", email: "maria@gmail.com" }
       ];
-      localStorage.setItem("clientes", JSON.stringify(clientesOriginais));
+      localStorage.setItem("clientes", JSON.stringify(clientesIniciais));
     }
 
-    let listaClientes = JSON.parse(localStorage.getItem("clientes"));
+    const listBox = document.getElementById("listBoxClientes");
 
-    function atualizarLista() {
-      const listBox = document.getElementById("listBoxClientes");
+    function carregarLista() {
       listBox.innerHTML = "";
+      const listaClientes = JSON.parse(localStorage.getItem("clientes")) || [];
       listaClientes.forEach(cliente => {
         const option = document.createElement("option");
         option.value = cliente.id;
@@ -48,17 +49,9 @@
       });
     }
 
-    function validarCampos() {
-      return (
-        document.getElementById("txtNome").value.trim() &&
-        document.getElementById("txtEndereco").value.trim() &&
-        document.getElementById("txtTelefone").value.trim() &&
-        document.getElementById("txtEmail").value.trim()
-      );
-    }
-
     function buscarCliente() {
-      const selectedId = parseInt(document.getElementById("listBoxClientes").value);
+      const listaClientes = JSON.parse(localStorage.getItem("clientes")) || [];
+      const selectedId = parseInt(listBox.value);
       const cliente = listaClientes.find(c => c.id === selectedId);
       if (cliente) {
         document.getElementById("txtNome").value = cliente.nome;
@@ -68,13 +61,23 @@
       }
     }
 
+    function validarCampos() {
+      const nome = document.getElementById("txtNome").value.trim();
+      const endereco = document.getElementById("txtEndereco").value.trim();
+      const telefone = document.getElementById("txtTelefone").value.trim();
+      const email = document.getElementById("txtEmail").value.trim();
+      return nome && endereco && telefone && email;
+    }
+
     function incluirCliente() {
       if (!validarCampos()) {
         alert("Preencha todos os campos antes de incluir.");
         return;
       }
 
+      const listaClientes = JSON.parse(localStorage.getItem("clientes")) || [];
       const novoId = listaClientes.length ? Math.max(...listaClientes.map(c => c.id)) + 1 : 1;
+
       const novoCliente = {
         id: novoId,
         nome: document.getElementById("txtNome").value.trim(),
@@ -85,12 +88,12 @@
 
       listaClientes.push(novoCliente);
       localStorage.setItem("clientes", JSON.stringify(listaClientes));
-      atualizarLista();
+      carregarLista();
       limparCampos();
     }
 
     function alterarCliente() {
-      const selectedId = parseInt(document.getElementById("listBoxClientes").value);
+      const selectedId = parseInt(listBox.value);
       if (isNaN(selectedId)) {
         alert("Selecione um cliente para alterar.");
         return;
@@ -101,15 +104,18 @@
         return;
       }
 
-      const cliente = listaClientes.find(c => c.id === selectedId);
-      if (cliente) {
-        cliente.nome = document.getElementById("txtNome").value.trim();
-        cliente.endereco = document.getElementById("txtEndereco").value.trim();
-        cliente.telefone = document.getElementById("txtTelefone").value.trim();
-        cliente.email = document.getElementById("txtEmail").value.trim();
-
+      const listaClientes = JSON.parse(localStorage.getItem("clientes")) || [];
+      const clienteIndex = listaClientes.findIndex(c => c.id === selectedId);
+      if (clienteIndex !== -1) {
+        listaClientes[clienteIndex] = {
+          id: selectedId,
+          nome: document.getElementById("txtNome").value.trim(),
+          endereco: document.getElementById("txtEndereco").value.trim(),
+          telefone: document.getElementById("txtTelefone").value.trim(),
+          email: document.getElementById("txtEmail").value.trim()
+        };
         localStorage.setItem("clientes", JSON.stringify(listaClientes));
-        atualizarLista();
+        carregarLista();
         limparCampos();
       }
     }
@@ -119,11 +125,16 @@
       document.getElementById("txtEndereco").value = "";
       document.getElementById("txtTelefone").value = "";
       document.getElementById("txtEmail").value = "";
-      document.getElementById("listBoxClientes").value = "";
     }
 
-    // Inicializa a lista ao carregar
-    atualizarLista();
+    // Criar botão "Limpar campos" dinamicamente
+    const botaoLimpar = document.createElement("button");
+    botaoLimpar.textContent = "Limpar campos";
+    botaoLimpar.onclick = limparCampos;
+    document.getElementById("botaoDinamico").appendChild(botaoLimpar);
+
+    // Carregar lista ao iniciar
+    carregarLista();
   </script>
 </body>
 </html>
