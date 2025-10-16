@@ -1,47 +1,186 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8" />
   <title>Gestão de Clientes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h2, h3 {
+      color: #333;
+    }
+    .form-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #btnAdicionar {
+      background-color: #4CAF50;
+      color: white;
+    }
+    #btnLimpar {
+      background-color: #ddd;
+      color: #333;
+      margin-left: 10px;
+    }
+    #mensagem {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+    }
+    .lista-container {
+      width: 100%;
+      max-width: 500px;
+    }
+    .cliente-item {
+      background: #fff;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cliente-info {
+      flex-grow: 1;
+    }
+    .cliente-actions button {
+      margin-left: 5px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .cliente-actions button:first-child {
+      background-color: #2196F3;
+      color: white;
+    }
+    .cliente-actions button:last-child {
+      background-color: #f44336;
+      color: white;
+    }
+    #busca {
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    #contador {
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    #btnOrdenar {
+      margin-bottom: 10px;
+      background-color: #6c63ff;
+      color: white;
+    }
+  </style>
 </head>
 <body>
   <h2>Cadastro de Clientes</h2>
-  <input id="nome" placeholder="Nome" />
-  <input id="endereco" placeholder="Endereço" />
-  <input id="telefone" placeholder="Telefone" />
-  <button onclick="adicionarCliente()">Adicionar</button>
+  <div class="form-container">
+    <input id="nome" placeholder="Nome" />
+    <input id="endereco" placeholder="Endereço" />
+    <input id="telefone" placeholder="Telefone" />
+    <button id="btnAdicionar" onclick="adicionarOuSalvarCliente()">Adicionar</button>
+    <button id="btnLimpar" onclick="limparCampos()">Limpar</button>
+    <div id="mensagem"></div>
+  </div>
 
-  <h3>Lista de Clientes</h3>
-  <ul id="listaClientes"></ul>
+  <input id="busca" placeholder="Buscar cliente por nome..." oninput="filtrarClientes()" />
+  <button id="btnOrdenar" onclick="ordenarClientes()">Ordenar por Nome (A-Z)</button>
+  <div id="contador"></div>
+  <div class="lista-container">
+    <ul id="listaClientes"></ul>
+  </div>
 
   <script>
+    let editandoIndex = null;
+
+    function mostrarMensagem(texto, cor = 'green') {
+      const msg = document.getElementById('mensagem');
+      msg.textContent = texto;
+      msg.style.color = cor;
+      setTimeout(() => msg.textContent = '', 3000);
+    }
+
     function carregarClientes() {
       const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
       const lista = document.getElementById('listaClientes');
+      const busca = document.getElementById('busca').value.toLowerCase();
       lista.innerHTML = '';
+      let total = 0;
+
       clientes.forEach((cliente, index) => {
-        const item = document.createElement('li');
-        item.textContent = `${cliente.nome} - ${cliente.endereco} - ${cliente.telefone}`;
-        item.innerHTML += ` <button onclick="editarCliente(${index})">Editar</button>
-                            <button onclick="excluirCliente(${index})">Excluir</button>`;
-        lista.appendChild(item);
+        if (cliente.nome.toLowerCase().includes(busca)) {
+          const item = document.createElement('li');
+          item.className = 'cliente-item';
+          item.innerHTML = `
+            <div class="cliente-info">${cliente.nome} - ${cliente.endereco} - ${cliente.telefone}</div>
+            <div class="cliente-actions">
+              <button onclick="editarCliente(${index})">Editar</button>
+              <button onclick="confirmarExclusao(${index})">Excluir</button>
+            </div>`;
+          lista.appendChild(item);
+          total++;
+        }
       });
+
+      document.getElementById('contador').textContent = `Total de clientes: ${total}`;
     }
 
-    function adicionarCliente() {
-      const nome = document.getElementById('nome').value;
-      const endereco = document.getElementById('endereco').value;
-      const telefone = document.getElementById('telefone').value;
+    function adicionarOuSalvarCliente() {
+      const nome = document.getElementById('nome').value.trim();
+      const endereco = document.getElementById('endereco').value.trim();
+      const telefone = document.getElementById('telefone').value.trim();
+
+      if (!nome || !endereco || !telefone) {
+        mostrarMensagem('Preencha todos os campos!', 'red');
+        return;
+      }
+
       const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-      clientes.push({ nome, endereco, telefone });
-      localStorage.setItem('clientes', JSON.stringify(clientes));
-      carregarClientes();
-    }
 
-    function excluirCliente(index) {
-      const clientes = JSON.parse(localStorage.getItem('clientes'));
-      clientes.splice(index, 1);
+      if (editandoIndex !== null) {
+        clientes[editandoIndex] = { nome, endereco, telefone };
+        mostrarMensagem('Cliente atualizado com sucesso!');
+        editandoIndex = null;
+        document.getElementById('btnAdicionar').textContent = 'Adicionar';
+      } else {
+        clientes.push({ nome, endereco, telefone });
+        mostrarMensagem('Cliente adicionado com sucesso!');
+      }
+
       localStorage.setItem('clientes', JSON.stringify(clientes));
+      limparCampos();
       carregarClientes();
     }
 
@@ -51,7 +190,41 @@
       document.getElementById('nome').value = cliente.nome;
       document.getElementById('endereco').value = cliente.endereco;
       document.getElementById('telefone').value = cliente.telefone;
-      excluirCliente(index);
+      document.getElementById('btnAdicionar').textContent = 'Salvar';
+      editandoIndex = index;
+    }
+
+    function confirmarExclusao(index) {
+      if (confirm('Deseja realmente excluir este cliente?')) {
+        excluirCliente(index);
+      }
+    }
+
+    function excluirCliente(index) {
+      const clientes = JSON.parse(localStorage.getItem('clientes'));
+      clientes.splice(index, 1);
+      localStorage.setItem('clientes', JSON.stringify(clientes));
+      mostrarMensagem('Cliente excluído com sucesso!');
+      carregarClientes();
+    }
+
+    function limparCampos() {
+      document.getElementById('nome').value = '';
+      document.getElementById('endereco').value = '';
+      document.getElementById('telefone').value = '';
+      document.getElementById('btnAdicionar').textContent = 'Adicionar';
+      editandoIndex = null;
+    }
+
+    function ordenarClientes() {
+      const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+      clientes.sort((a, b) => a.nome.localeCompare(b.nome));
+      localStorage.setItem('clientes', JSON.stringify(clientes));
+      carregarClientes();
+    }
+
+    function filtrarClientes() {
+      carregarClientes();
     }
 
     carregarClientes();
